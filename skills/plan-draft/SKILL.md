@@ -21,6 +21,12 @@ This is the **planning half** of a compact two-step workflow (`/plan-draft` then
 artifact, no separate spec files. Its task list is what `/plan-execute` walks; its ADR
 section is how non-trivial decisions get documented. Make both execution-ready.
 
+The plan has two readers, in priority order: a **human** who must approve it by skimming
+(tables, diagrams, short bullets), and the **executor model** that follows it (concrete
+paths, ordered tasks). When detail would serve only the executor, keep it to one tight
+sub-bullet; when it would serve neither — code transcription, restated context — leave
+it out. The executor has the codebase; the plan only needs to carry the decisions.
+
 The plan template lives next to this skill at `${CLAUDE_SKILL_DIR}/PLAN.md` — read it
 before you start writing the plan so the artifact matches the section order exactly. The
 glossary format lives at `${CLAUDE_SKILL_DIR}/CONTEXT-FORMAT.md` — read it before phase 3.
@@ -54,6 +60,9 @@ Use Glob / Grep / Read to find the files, modules, and patterns this change touc
 Reference concrete paths, not assumptions. Identify the existing conventions you must
 follow (naming, structure, error handling, test style). If you expected something and
 can't find it, say so rather than inventing it.
+Record findings as **table rows** (`path:line` → the one fact that matters), not prose.
+Keep only facts that shape a decision or task — the executor re-reads the code at run
+time, so never transcribe implementations into the plan.
 Also read the domain docs: `CONTEXT.md` (or `CONTEXT-MAP.md` at root → the per-context
 `CONTEXT.md` it points to) if present, and skim `docs/adr/` for decisions that constrain
 this change. These tell you the project's canonical terms and prior trade-offs — honour
@@ -89,10 +98,14 @@ to the requester now.
 **5. Write the implementation tasks (the apply-loop checklist).**
 Produce an ordered checklist of `- [ ]` tasks — this is exactly what `/plan-execute` walks
 and flips to `- [x]`. One task = one coherent, verifiable unit: small enough to land and
-check on its own, ordered so each builds on the last (openspec apply-loop discipline). For
-each task name the files it changes, the change, and why — specific enough that the executor
-can follow it without re-deriving your reasoning. Call out anything that must happen in a
-specific order.
+check on its own, ordered so each builds on the last (openspec apply-loop discipline).
+Format each task as a **short imperative title** with the detail in indented sub-bullets:
+Files, Change (1–2 lines), and a constraint/ordering note only when load-bearing. Add a
+"Why" sub-bullet only when the reason is not obvious from the title — never cram
+files + change + why into one long bullet line. Group tasks into phases when ordering
+across groups matters. Be specific enough that the executor can follow without
+re-deriving your reasoning, but lean on §2's findings by reference instead of repeating
+them.
 
 **6. Define done.**
 Write acceptance criteria as a checklist. For each item, specify exactly how it will be
@@ -128,9 +141,11 @@ if the change does any of:
 - makes a security, auth, or data-privacy decision;
 - chooses one approach over a viable alternative for non-obvious reasons.
 
-If any apply, set frontmatter `adr: required`, write "ADR required" in section 8, and draft
-the ADR body inline (Context / Decision / Alternatives considered / Consequences, matching
-`${CLAUDE_SKILL_DIR}/ADR.md`) — `/plan-execute` commits it as `docs/adr/NNNN-<slug>.md`. If none
+If any apply, set frontmatter `adr: required` and draft the ADR in section 8 as
+**compressed bullets only** (Title / Context / Decision / Alternatives / Consequences,
+≤20 lines total — see the §8 stub in `${CLAUDE_SKILL_DIR}/PLAN.md`). Do NOT write full
+ADR prose in the plan; `/plan-execute` expands the bullets into the full
+`${CLAUDE_SKILL_DIR}/ADR.md` structure when it commits `docs/adr/NNNN-<slug>.md`. If none
 apply, set `adr: none`, write "No ADR needed" and one line of why.
 
 **10. Save the draft.**
@@ -141,6 +156,20 @@ for `YYYY-MM-DD`, never a guessed date) following the structure in
 (It must exist as a
 file so the reviewer can read it cold.) Create `.claude/plans/` with the Write tool path if
 it does not exist. Do not write any other file. Do not start implementing.
+
+The first audience is the **human reviewer** — write for a skim, not a read. Follow the
+formatting rules in the template's header comment, in particular:
+
+- Tables and short bullets over prose; no paragraph longer than 3 sentences.
+- Each fact lives in one section; cross-reference ("see §2") instead of repeating.
+- Add a mermaid diagram (renders in VSCode Mermaid Preview / GitHub) only when the plan
+  changes architecture or module boundaries; add before/after payload examples (fenced
+  json) only when it changes an API/data contract. Skip both otherwise.
+- Omit empty headings — no "none" placeholders (except §7/§8 which require an explicit
+  "None"/"No ADR needed" + why).
+- A reviewer should grasp goal, approach, and risk in ~5 minutes. If the plan runs long,
+  trim §2 transcription and task sub-bullets first — never the task list itself or the
+  definition of done.
 
 **11. Delegate the review.**
 The review must be cold — a fresh context that did not write the plan. Resolve the

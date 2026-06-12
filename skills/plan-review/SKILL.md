@@ -36,9 +36,16 @@ is weaker than a cold review, and a fresh session or the `plan-critic` agent is 
      and known available skills. Flag invented or mismatched skill names.
    - **ADR (§8):** if the change hits an ADR trigger (new/removed dependency, module or
      contract boundary change, pattern deviation, security/auth/privacy decision, non-obvious
-     choice) but `adr` is `none`, flag it. If `adr: required`, check the inline body is
-     complete (Context / Decision / Alternatives / Consequences).
+     choice) but `adr` is `none`, flag it. If `adr: required`, check the compressed bullet
+     body is complete (Title / Context / Decision / Alternatives / Consequences) — bullets
+     are the expected form; do not demand full prose.
    - **Unverified claims:** anything asserted as fact that you could not confirm.
+   - **Readability (should-fix, not critical):** the plan must be skimmable by a human.
+     Flag prose walls (paragraphs over ~3 sentences), task bullets that cram
+     files + change + why into one line instead of sub-bullets, findings written as prose
+     instead of table rows, code transcribed into §2, empty "none" placeholder headings,
+     and a missing diagram/payload example when the plan changes architecture or an
+     API/data contract.
 
 ## Output format (exactly this)
 

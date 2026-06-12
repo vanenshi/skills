@@ -83,8 +83,10 @@ If frontmatter `adr: required`, create `docs/adr/NNNN-<slug>.md` using the next 
 number, with the structure from `docs/adr/_TEMPLATE.md`. If `docs/adr/_TEMPLATE.md` does
 not exist yet, create it first by copying the ADR template from the plan-draft skill
 (`${CLAUDE_SKILL_DIR}/../plan-draft/ADR.md`); if that skill is not installed, derive the
-structure from the plan's section 8 body. Fill Context / Decision / Alternatives
-considered / Consequences from the plan's section 8. Set its `Status:` to `accepted`. Write the chosen
+structure from the plan's section 8 body. The plan's section 8 is **compressed bullets**
+(Title / Context / Decision / Alternatives / Consequences) — expand them into full prose
+for the ADR file, staying faithful to the bullets and adding nothing the plan does not
+support. Set its `Status:` to `accepted`. Write the chosen
 number back into the plan's frontmatter (`adr: NNNN`). This ADR is how the change is
 documented — there are no spec files. (Human commits the ADR separately if desired.)
 
