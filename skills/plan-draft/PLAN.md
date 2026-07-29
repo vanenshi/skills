@@ -3,6 +3,10 @@ status: draft # draft -> approved -> done
 date: YYYY-MM-DD
 adr: none # none | required | NNNN (set to the committed ADR number once written)
 skills: [] # skills /plan-execute should preload, e.g. [coding-standards, ui-testing]
+execution_model: sonnet # recommended model for /plan-execute: haiku | sonnet | opus
+execution_effort: medium # recommended reasoning effort: low | medium | high
+handoffs: [] # handoff files this plan generated (sibling side must be planned+executed first; /plan-execute gates on their status)
+from_handoff: # path of the handoff this plan was drafted from, if any
 ---
 
 <!--
@@ -16,10 +20,13 @@ Formatting rules — the first audience is a HUMAN skimming this for review:
 - Include before/after payload examples (fenced json) only when the plan changes an
   API/data contract — that is what the human reviewer checks hardest.
 - Omit any heading or sub-heading that would be empty. Never write "none" placeholders
-  (exceptions: §7 and §8 require an explicit "None"/"No ADR needed" + why).
+  (exceptions: §6 and §7 require an explicit "None"/"No ADR needed" + why).
 -->
 
 # <Plan title>
+
+> **Run with:** `<model>` / `<effort>` effort — <one line: why this tier fits (task
+> complexity, blast radius)>. Instruction for whoever launches `/plan-execute`.
 
 ## 1. Goal & scope
 
@@ -33,19 +40,7 @@ Formatting rules — the first audience is a HUMAN skimming this for review:
 **Out of scope:**
 - <item — one-line reason it is excluded>
 
-## 2. Codebase findings
-
-<Only facts that shape the plan. The executor re-reads the code at run time — do not
-transcribe it. One row per fact; group with bold sub-headings only when the table grows
-past ~10 rows.>
-
-| Where | Fact that matters |
-|---|---|
-| `path/File.cs:12` | <one line> |
-
-<Before/after payload examples go here when an API/data contract changes.>
-
-## 3. Assumptions & open questions
+## 2. Assumptions & open questions
 
 <Include only the non-empty groups below; omit the rest entirely.>
 
@@ -58,7 +53,7 @@ past ~10 rows.>
 **Bookkeeping** (one line each, only if any): terms resolved → `CONTEXT.md`; glossary
 conflicts surfaced; prior ADRs that constrained this plan.
 
-## 4. Implementation tasks
+## 3. Implementation tasks
 
 <The execution checklist. /plan-execute walks these top-to-bottom and flips - [ ] -> - [x]
 as each lands. One task = one coherent, verifiable unit, ordered so each builds on the
@@ -73,11 +68,11 @@ Files, Change (1–2 lines), plus a constraint/ordering note only when load-bear
   - Change: <1–2 lines>
   - <constraint or ordering note, only if load-bearing>
 
-## 5. Definition of done
+## 4. Definition of done
 
 - [ ] <criterion> — verify: `<test / command / manual check>`
 
-## 6. Risk & rollback
+## 5. Risk & rollback
 
 | Risk | Severity | Mitigation |
 |---|---|---|
@@ -86,14 +81,16 @@ Files, Change (1–2 lines), plus a constraint/ordering note only when load-bear
 - **Rollback:** <how to undo>
 - **Irreversible:** <migrations, data changes, contract/API changes — omit if none>
 
-## 7. Skills Needed
+## 6. Skills Needed
 
-<Skills /plan-execute should load for §4, by exact name (mirrored in `skills:`
-frontmatter). Only skills that exist in this project. If none apply, write "None" + why.>
+<Skills /plan-execute should load for §3, by exact name (mirrored in `skills:`
+frontmatter). Project-local (`.claude/skills/`) or global (installed on the
+operator's machine) — either counts, as long as it actually exists on the
+available-skills list. Mark which. If none apply, write "None" + why.>
 
-- `<skill-name>` — for: <task ref> — why: <reason>
+- `<skill-name>` (project | global) — for: <task ref> — why: <reason>
 
-## 8. ADR (compressed — /plan-execute expands)
+## 7. ADR (compressed — /plan-execute expands)
 
 <If an ADR trigger applies (see /plan-draft phase 9): set frontmatter `adr: required` and
 draft tight bullets only, ≤20 lines total — /plan-execute expands them into full prose at
