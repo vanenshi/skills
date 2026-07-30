@@ -1,6 +1,11 @@
 ---
 name: plan-handoff
-description: Shared procedure for writing a durable, self-contained handoff file for out-of-scope work — the mechanics behind the root CLAUDE.md rule that handoffs replace spawn_task chips, TaskCreate backlog items, and "want me to also…?" offers. Not invoked directly: plan-draft, plan-execute, and CLAUDE.md's out-of-scope-work rule all point here for the "how".
+description: >-
+  Shared procedure for writing a durable, self-contained handoff file for
+  out-of-scope work — the mechanics behind the root CLAUDE.md rule that
+  handoffs replace spawn_task chips, TaskCreate backlog items, and "want me to
+  also…?" offers. Not invoked directly: plan-draft, plan-execute, and
+  CLAUDE.md's out-of-scope-work rule all point here for the "how".
 category: Workflow
 tags: [workflow, artifacts, handoff]
 disable-model-invocation: true
@@ -25,11 +30,11 @@ Read this repo's local `.claude/CLAUDE.md` for a declared "Multi-repo workspace"
 table.
 
 - No table declared (this repo's current state) → `target:` is this repo's own name
-  — the handoff is for a *future session* of this same repo, not a sibling.
+  — the handoff is for a _future session_ of this same repo, not a sibling.
 - Table declared and the issue clearly belongs to a listed sibling → `target:` is that
   sibling's name. If it's ambiguous which repo owns the issue, ask before writing.
 - That table's cross-repo policy (inline vs handoff-only) governs whether you may also
-  *edit* a sibling directly for the current task — it does not change how you file a
+  _edit_ a sibling directly for the current task — it does not change how you file a
   handoff for something out of scope.
 
 **2. Gather evidence, don't invent it.**
