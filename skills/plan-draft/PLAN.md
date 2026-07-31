@@ -90,18 +90,19 @@ available-skills list. Mark which. If none apply, write "None" + why.>
 
 - `<skill-name>` (project | global) — for: <task ref> — why: <reason>
 
-## 7. ADR (compressed — /plan-execute expands)
+## 7. ADR (invariant bullets — /plan-execute commits the file)
 
-<If an ADR trigger applies (see /plan-draft phase 9): set frontmatter `adr: required` and
-draft tight bullets only, ≤20 lines total — /plan-execute expands them into full prose at
-docs/adr/NNNN-<slug>.md and writes the number back. Otherwise: "No ADR needed" + one line
-of why.>
+<Only if the change creates an invariant an agent could not infer and would violate — see
+/plan-draft phase 9 for the four gates. Set frontmatter `adr: required` and write bullets
+only, ≤20 lines; /plan-execute writes docs/adr/NNNN-<slug>.md and the number back.
+Otherwise: "No ADR needed" + the file that carries the rule instead (convention rule ID,
+constraint, or comment).>
 
-- **Title:** <the decision in one line>
-- **Context:** <2–3 bullets>
-- **Decision:** <2–4 bullets>
-- **Alternatives:** <one bullet each: alternative — why rejected>
-- **Consequences:** <"+" and "−" bullets>
+- **Title:** <the invariant stated as an assertion, not the topic>
+- **Invariants:** <one bullet each: the rule — the wrong code it prevents — where it is
+  enforced or visible (`file:line`, a CHECK, a convention rule ID)>
+- **Where it lives:** <the paths that own it, one line each>
+- **Known gaps:** <only if real>
 
 ## Execution log
 

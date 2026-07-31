@@ -108,17 +108,22 @@ How do you want to proceed?
 Trivial mechanical fixes (a renamed import) are fine to do inline; anything that changes
 the design is not.
 
-**6. ADR (the documentation output).**
-If frontmatter `adr: required`, create `docs/adr/NNNN-<slug>.md` using the next free
-number, with the structure from `docs/adr/_TEMPLATE.md`. If `docs/adr/_TEMPLATE.md` does
-not exist yet, create it first by copying the ADR template from the plan-draft skill
-(`${CLAUDE_SKILL_DIR}/../plan-draft/ADR.md`); if that skill is not installed, derive the
-structure from the plan's section 7 body. The plan's section 7 is **compressed bullets**
-(Title / Context / Decision / Alternatives / Consequences) — expand them into full prose
-for the ADR file, staying faithful to the bullets and adding nothing the plan does not
-support. Set its `Status:` to `accepted`. Write the chosen
-number back into the plan's frontmatter (`adr: NNNN`). This ADR is how the change is
-documented — there are no spec files. (Human commits the ADR separately if desired.)
+**6. ADR (the invariant, if the change created one).**
+If frontmatter `adr: required`, read the format and rules in
+`${CLAUDE_SKILL_DIR}/../plan-draft/ADR.md` first (or `docs/adr/_TEMPLATE.md` if the
+plan-draft skill is not installed), then create `docs/adr/NNNN-<slug>.md` — get the number
+by running `ls docs/adr/` and taking the next free one, never by guessing from memory.
+
+The plan's section 7 is invariant bullets. Carry them across as invariant bullets: the
+rule, the wrong code it prevents, where it is enforced. **Do not expand them into prose,
+and do not add Context / Alternatives / Consequences sections** — the format has none, and
+narrative is exactly what makes an ADR stale and unread. Keep it under 45 lines.
+
+**Verify every `file:line` you write by reading the file**, and add nothing the plan does
+not support. Set `Status: accepted` with today's date. Write the chosen number back into
+the plan's frontmatter (`adr: NNNN`), and add the ADR's one-clause summary wherever the
+project indexes them (e.g. `AGENTS.md` → Key docs). The plan is throwaway; this file is
+the part that outlives it. (Human commits the ADR separately if desired.)
 
 **7. Verify against "done".**
 Run every acceptance check in section 4 and report pass/fail for each. Discover the

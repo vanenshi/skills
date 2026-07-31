@@ -19,7 +19,8 @@ urge to change code, that is a signal to write it into the plan instead.
 This is the **planning half** of a compact two-step workflow (`/plan-draft` then
 `/plan-execute`). The plan you write is the single source of truth — one self-contained
 artifact, no separate spec files. Its task list is what `/plan-execute` walks; its ADR
-section is how non-trivial decisions get documented. Make both execution-ready.
+section carries any invariant the change creates that an agent could not otherwise infer.
+Make both execution-ready.
 
 The plan has two readers, in priority order: a **human** who must approve it by skimming
 (tables, diagrams, short bullets), and the **executor model** that follows it (concrete
@@ -33,8 +34,8 @@ glossary format lives at `${CLAUDE_SKILL_DIR}/CONTEXT-FORMAT.md` — read it bef
 
 This workflow keeps **two durable docs** alongside the ephemeral plan: `CONTEXT.md` (the
 project's ubiquitous-language glossary, maintained inline during the grill phase) and
-`docs/adr/` (non-trivial decisions). The plan itself is throwaway (draft → done → archive);
-the glossary and ADRs outlive it.
+`docs/adr/` (invariants an agent would otherwise break — not a decision log). The plan
+itself is throwaway (draft → done → archive); the glossary and ADRs outlive it.
 
 ## Repository context (injected)
 
@@ -66,9 +67,10 @@ through. Each fact you keep goes where it does work: a `path:line` in the task t
 on it (§3), an entry in §2 if it is an assumption or an open question, a row in §5 if it
 is a risk. A fact that lands in none of those was not worth recording.
 Also read the domain docs: `CONTEXT.md` (or `CONTEXT-MAP.md` at root → the per-context
-`CONTEXT.md` it points to) if present, and skim `docs/adr/` for decisions that constrain
-this change. These tell you the project's canonical terms and prior trade-offs — honour
-them in the plan.
+`CONTEXT.md` it points to) if present, and read `docs/adr/` for invariants that constrain
+this change — each one names code an agent would otherwise write wrongly, so a plan that
+violates one is a plan that will be built wrong. Honour the canonical terms and the
+invariants in the plan.
 
 **Multi-repo workspaces.** If the loaded context (`CLAUDE.md` / `.claude/CLAUDE.md`)
 declares sibling repositories and the goal touches one, investigate it too — via a
@@ -189,24 +191,29 @@ plan itself, not the goal's prestige:
 The recommendation binds the human, not the tooling: `/plan-execute` runs on whatever
 model the session has — the human picks it when launching.
 
-**9. ADR check (the documentation output, section 7).**
-This repo documents non-trivial decisions with an ADR under `docs/adr/` — there are no
-spec files, so the ADR *is* the durable record of what changed and why. An ADR is REQUIRED
-if the change does any of:
+**9. ADR check (section 7).**
+An ADR under `docs/adr/` records **an invariant an LLM agent could not infer from the
+codebase and would plausibly violate** — nothing else. It is not a record of what changed
+or why; that is the plan's job, and the plan is throwaway on purpose. Read
+`${CLAUDE_SKILL_DIR}/ADR.md` before deciding — it holds the four gates and the format.
 
-- adds or removes a dependency / library;
-- adds, removes, or changes a module or service boundary;
-- changes a data model, schema, or API/event contract;
-- deviates from an established pattern already in the codebase;
-- makes a security, auth, or data-privacy decision;
-- chooses one approach over a viable alternative for non-obvious reasons.
+An ADR is REQUIRED only when the change creates a rule that survives all four gates:
+it is not already a convention rule ID, not enforced by a machine (schema, CHECK,
+dependency-cruiser, the type-checker), not a comment's job at one call site, and an agent
+writing ordinary code would break it. In practice that means **an absence** (a field that
+must never exist, a value that must never be returned, a retry that must never be added)
+or **a deliberate contradiction** of an existing convention.
 
-If any apply, set frontmatter `adr: required` and draft the ADR in section 7 as
-**compressed bullets only** (Title / Context / Decision / Alternatives / Consequences,
-≤20 lines total — see the §7 stub in `${CLAUDE_SKILL_DIR}/PLAN.md`). Do NOT write full
-ADR prose in the plan; `/plan-execute` expands the bullets into the full
-`${CLAUDE_SKILL_DIR}/ADR.md` structure when it commits `docs/adr/NNNN-<slug>.md`. If none
-apply, set `adr: none`, write "No ADR needed" and one line of why.
+None of these earns an ADR on its own: adding or removing a dependency; picking library A
+over B; a new module or slice that follows the existing pattern; a schema change whose
+rules are visible in the schema.
+
+If required, set frontmatter `adr: required` and draft section 7 as **invariant bullets
+only** (≤20 lines — see the §7 stub in `${CLAUDE_SKILL_DIR}/PLAN.md`): the rule, the wrong
+code it prevents, and where it is enforced. Never Context / Alternatives / Consequences
+prose — the ADR format has no such sections. If a gate caught it instead, set `adr: none`
+and name the file that carries the rule (the convention rule ID, the constraint, the
+comment) — naming the better home IS the answer, not a fallback.
 
 **10. Save the draft.**
 Write the plan to `.claude/plans/YYYY-MM-DD-<short-slug>.md` (use the injected "Today's date"

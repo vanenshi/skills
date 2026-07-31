@@ -40,11 +40,16 @@ is weaker than a cold review, and a fresh session is preferred.
      flag any criterion a test already satisfies today — it proves nothing about the change.
    - **Skills Needed (§6):** every named skill must actually exist — check `.claude/skills/`
      and known available skills. Flag invented or mismatched skill names.
-   - **ADR (§7):** if the change hits an ADR trigger (new/removed dependency, module or
-     contract boundary change, pattern deviation, security/auth/privacy decision, non-obvious
-     choice) but `adr` is `none`, flag it. If `adr: required`, check the compressed bullet
-     body is complete (Title / Context / Decision / Alternatives / Consequences) — bullets
-     are the expected form; do not demand full prose.
+   - **ADR (§7):** an ADR is warranted only when the change creates an invariant an agent
+     could not infer from the codebase and would plausibly violate — typically an absence
+     (a field that must never exist, a value that must never be returned) or a deliberate
+     contradiction of an existing convention rule. Flag `adr: none` **only** if you can
+     name such an invariant the plan leaves unrecorded. Flag `adr: required` in the other
+     direction too — if the rule is really a convention rule ID, a schema constraint, or a
+     one-call-site comment, say which, because a redundant ADR becomes the stale copy that
+     outranks nothing. If `adr: required` stands, check the bullets state the rule, the
+     wrong code it prevents, and where it is enforced; bullets are the expected form, and
+     Context / Alternatives / Consequences prose is a defect, not a gap.
    - **Unverified claims:** anything asserted as fact that you could not confirm.
    - **Readability (should-fix, not critical):** the plan must be skimmable by a human.
      Flag prose walls (paragraphs over ~3 sentences), task bullets that cram
