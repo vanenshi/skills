@@ -1,7 +1,7 @@
 # skills
 
-A compact plan-first workflow for coding agents: interview → execution-ready plan → cold
-review → human approval → apply-loop execution.
+Skills for coding agents: a plan-first workflow, diff reading, Azure DevOps review, and
+runtime debugging.
 
 Installable with the [skills](https://github.com/vercel-labs/skills) CLI:
 
@@ -9,7 +9,14 @@ Installable with the [skills](https://github.com/vercel-labs/skills) CLI:
 npx skills add vanenshi/skills
 ```
 
-## Skills
+## Personalizing
+
+Several skills ship with `<org>`, `<project>`, `<repo>` placeholders and inline
+`<!-- PERSONALIZE: … -->` markers rather than hardcoded values. They are meant to be filled in
+for your setup — each such skill has a **Personalize before first use** section explaining
+exactly what to set and how to discover the right value. Placeholders are never literals.
+
+## Planning
 
 | Skill | What it does |
 | --- | --- |
@@ -20,6 +27,21 @@ npx skills add vanenshi/skills
 
 Workflow: `/plan-draft <goal>` → review the draft and set `status: approved` →
 `/plan-execute`.
+
+## Review and debugging
+
+| Skill | What it does |
+| --- | --- |
+| `abridge-diff` | Condenses a long diff into a "reading diff" — same rows and structure, mechanical bulk removed. The model emits coordinates and a Python applier writes the output, so no line can be invented. A local port of [boldsoftware/meat](https://github.com/boldsoftware/meat) that needs no API key. |
+| `azure-devops` | Driving an Azure DevOps remote via the `az` CLI: flag-parity gotchas, work-item linking and field formats, and the commit-split/PR create-update workflow. Self-updating — each gotcha exists because a real run hit it. |
+| `code-review-azure` | Reviews an Azure DevOps PR: a change brief (what changed, what was decided, what to ask the author) followed by parallel review agents whose findings are independently validated before anything is posted. Builds on `azure-devops`. |
+| `debug-mode` | Hypothesis-driven debugging with runtime log instrumentation and human-in-the-loop reproduction, for bugs that cannot be diagnosed by reading code alone. Strips every trace of instrumentation when done. |
+
+## Conventions
+
+| Skill | What it does |
+| --- | --- |
+| `conventional-commits` | Formats commit messages per the qoomon conventional-commits spec: types, scopes, breaking changes, body, footer. |
 
 Besides the throwaway plan, the workflow maintains two durable docs: `CONTEXT.md` (the
 project's ubiquitous-language glossary) and `docs/adr/` (architecture decision records).

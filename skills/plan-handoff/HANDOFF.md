@@ -1,7 +1,7 @@
 ---
 status: open # open -> planned (target /plan-draft consumed it) -> done (target plan executed)
 date: YYYY-MM-DD
-target: <repo that must act on this handoff, e.g. Match.Backend>
+target: <repo that must act on this handoff, e.g. api-service>
 origin_plan: <absolute path to the plan that generated this handoff>
 plan: # set by the target repo's /plan-draft: path to the plan drafted from this handoff
 ---
