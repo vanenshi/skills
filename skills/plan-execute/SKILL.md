@@ -5,7 +5,6 @@ when_to_use: Invoke directly with /plan-execute after a plan from /plan-draft ha
 argument-hint: [path to plan, or empty for the latest approved one]
 tags: [workflow, artifacts]
 category: Workflow
-disable-model-invocation: true
 allowed-tools: "*"
 ---
 

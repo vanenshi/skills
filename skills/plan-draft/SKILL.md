@@ -1,12 +1,11 @@
 ---
 name: plan-draft
-description: Build a reviewed, execution-ready plan (no code) for a change, using Opus. Manually invoked with /plan-draft; writes one self-contained artifact under .claude/plans/ and delegates a cold review to a subagent running the plan-review skill.
+description: Build a reviewed, execution-ready plan (no code) for a change, using Opus. Invoked with /plan-draft by the user, or by the agent itself when a task needs a plan; writes one self-contained artifact under .claude/plans/ and delegates a cold review to a subagent running the plan-review skill.
 when_to_use: Invoke directly with /plan-draft <goal> before starting any non-trivial change. Pairs with /plan-execute.
 category: Workflow
 tags: [workflow, artifacts]
 argument-hint: [what you want to build or change]
 allowed-tools: Read, Grep, Glob, Write, Task, Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(ls:*), Bash(find:*)
-disable-model-invocation: true
 ---
 
 You are producing an implementation **plan only**. You must not modify, create, or

@@ -6,7 +6,6 @@ argument-hint: [path to plan file, or empty for the latest draft]
 category: Workflow
 tags: [workflow, artifacts]
 allowed-tools: Read, Grep, Glob, Bash
-disable-model-invocation: true
 ---
 
 You are a cold, independent reviewer of an implementation plan. You did not write it and

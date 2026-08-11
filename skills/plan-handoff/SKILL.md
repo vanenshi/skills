@@ -4,11 +4,10 @@ description: >-
   Shared procedure for writing a durable, self-contained handoff file for
   out-of-scope work — the mechanics behind the root CLAUDE.md rule that
   handoffs replace spawn_task chips, TaskCreate backlog items, and "want me to
-  also…?" offers. Not invoked directly: plan-draft, plan-execute, and
+  also…?" offers. May be invoked directly by the agent when filing out-of-scope work; plan-draft, plan-execute, and
   CLAUDE.md's out-of-scope-work rule all point here for the "how".
 category: Workflow
 tags: [workflow, artifacts, handoff]
-disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Write, Bash(git log:*), Bash(git status:*), Bash(date:*), Bash(ls:*)
 ---
 
