@@ -5,7 +5,7 @@ when_to_use: Invoke directly with /plan-draft <goal> before starting any non-tri
 category: Workflow
 tags: [workflow, artifacts]
 argument-hint: [what you want to build or change]
-allowed-tools: Read, Grep, Glob, Write, Task, Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(ls:*), Bash(find:*)
+allowed-tools: Read, Grep, Glob, Write, Task, Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(ls:*), Bash(find:*), Bash(echo:*), Bash(date:*)
 ---
 
 You are producing an implementation **plan only**. You must not modify, create, or
@@ -41,7 +41,7 @@ itself is throwaway (draft → done → archive); the glossary and ADRs outlive 
 Recent history — orientation only (conventions, in-flight direction). This is NOT the plan's
 scope; ignore it if unrelated to the goal.
 
-- Recent commits: !`git log --oneline -5`
+- Recent commits: !`git log --oneline -5 2>/dev/null || echo "(no git history — not a repo, or no commits yet)"`
 - Today's date: !`date +%F`
 
 Goal from the requester: $ARGUMENTS
