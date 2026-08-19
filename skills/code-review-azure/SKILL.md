@@ -1,17 +1,24 @@
 ---
 name: code-review-azure
-description: Code review an Azure DevOps pull request using the az CLI. Use when the user asks to review an Azure Repos / Azure DevOps PR (az repos pr), or says "code-review-azure". Also use when the user wants to understand or decide on an Azure DevOps PR — "what changed in PR 482", "summarize this PR", "what did they decide", "what should I ask the developer". Mirrors the GitHub review flow but targets Azure DevOps via `az repos` and `az devops invoke`.
+description: Code review an Azure DevOps pull request. Use when the user asks to review an Azure Repos / Azure DevOps PR, or says "code-review-azure". Also use when the user wants to understand or decide on an Azure DevOps PR — "what changed in PR 482", "summarize this PR", "what did they decide", "what should I ask the developer". MCP-first — uses the `mcp__ado__*` tools when the ado MCP server is connected; falls back to `az repos`/`az devops invoke` otherwise. Mirrors the GitHub review flow.
 allowed-tools: Bash(az repos pr show:*), Bash(az repos pr list:*), Bash(az repos pr policy list:*), Bash(az repos pr reviewer list:*), Bash(az devops invoke:*), Bash(az devops configure:*), Bash(git fetch:*), Bash(git diff:*), Bash(git log:*), Bash(git rev-parse:*), Bash(git show:*), Bash(python3:*)
 ---
 
 # Code review (Azure DevOps)
 
-> CLI usage, org/project conventions, flag-parity gotchas, and the self-healing protocol for
-> `az repos`/`az devops` live in the **`azure-devops`** skill — read it first. This skill is the
-> review workflow that sits on top of it; it points back there for CLI mechanics instead of
+> Tool preference (MCP first, az fallback), org/project conventions, API-level gotchas, and the
+> self-healing protocol live in the **`azure-devops`** skill — read it first. This skill is the
+> review workflow that sits on top of it; it points back there for ADO mechanics instead of
 > restating them, so gotcha fixes only ever need one home.
 
 Provide a code review for the given Azure DevOps pull request.
+
+**Surface selection:** when the ado MCP server is connected (`mcp__ado__*` tools, possibly
+deferred — load `repo_pull_request`, `repo_pull_request_thread`, `repo_pull_request_thread_write`
+via ToolSearch in one call), use it for all PR metadata, thread reads, and thread posting. The
+`az` CLI paths below are kept as the fallback for MCP-less sessions, and for the one case MCP
+cannot do (left-side/deleted-line anchors — see step 9). Diffs and commit lists always come from
+local git in either surface.
 
 ## Usage
 
@@ -19,9 +26,10 @@ Provide a code review for the given Azure DevOps pull request.
 /code-review-azure <pr-id> [--brief] [--comment] [--org <url>] [--project <name>] [--repository <name>]
 ```
 
-`<org>`, `<project>`, and `<repo>` are placeholders throughout this skill, never literals. Set
-them once via `az devops configure` — see **§ Personalize before first use** in the `azure-devops`
-skill. Inline `<!-- PERSONALIZE: … -->` comments below mark the two places where recording your
+`<org>`, `<project>`, and `<repo>` are placeholders throughout this skill, never literals. For
+MCP, `project` + `repositoryId` are call parameters (project required when repositoryId is a
+name). For the az fallback, set them once via `az devops configure` — see the `azure-devops`
+skill. Inline `<!-- PERSONALIZE: … -->` comments below mark the places where recording your
 own repo's specifics turns a multi-step investigation into a single grep.
 
 | Arg | Effect |
@@ -29,28 +37,19 @@ own repo's specifics turns a multi-step investigation into a single grep.
 | `<pr-id>` | **Required.** Numeric Azure DevOps PR id (no `#`). |
 | `--comment` | Post findings back to the PR as inline threads (and a summary if clean). Without it, findings only print to the terminal — nothing is posted. |
 | `--brief` | Stop after the change brief (step 3). Orientation only: what changed, what was decided, what to ask. Skips the review agents entirely. Implies no `--comment`. |
-| `--org <url>` | Azure DevOps org URL, e.g. `https://dev.azure.com/MyOrg/`. Overrides configured/detected default. |
-| `--project <name>` | Project name or id. Overrides default. |
-| `--repository <name>` | Repo name or id. Overrides default. |
+| `--org <url>` | Azure DevOps org URL. Only meaningful for the az fallback (MCP connection fixes the org). |
+| `--project <name>` | Project name or id. |
+| `--repository <name>` | Repo name or id. |
 
 Examples:
 - `/code-review-azure 482` — review PR 482, print the change brief then the findings.
 - `/code-review-azure 482 --brief` — change brief only, no review agents.
 - `/code-review-azure 482 --comment` — review and post inline threads.
-- `/code-review-azure 482 --comment --org https://dev.azure.com/<org>/ --project <project> --repository <repo>` — fully explicit.
-
-If `--org`/`--project`/`--repository` are omitted, rely on `az devops configure` defaults or
-`--detect true` from the repo's git remote. Pass whatever the user provided through to **every**
-`az` call — but note not every `pr` subcommand accepts all three flags (`azure-devops` skill's
-flag-parity gotcha covers which ones don't, e.g. `pr show`/`pr update`).
-
-**Azure CLI has no `pr diff` and no `pr comment` command** (see `azure-devops` skill). So:
-- **Diff** comes from git (`git diff target...source`) or the REST `pullRequestIterations`/`changes` resource.
-- **Comments / threads** are posted via `az devops invoke` against the `git` area, `pullRequestThreads` resource.
 
 **Prereqs (assume already true; do NOT test tools):**
-- `az` is installed with the `azure-devops` extension and authenticated (`az devops login` / `AZURE_DEVOPS_EXT_PAT`).
-- `org`/`project` are either passed as args, set via `az devops configure -d organization=... project=...`, or auto-detected from the repo's git remote (`--detect true`). Prefer passing `--org`/`--project`/`--repository` through to every command if the user gave them.
+- MCP path: the ado MCP server is connected and authenticated.
+- az fallback: `az` with the `azure-devops` extension, authenticated; org/project configured,
+  passed, or `--detect true` from the git remote.
 
 **Agent assumptions (applies to all agents and subagents):**
 - All tools are functional and will work without error. Do not test tools or make exploratory calls. Make sure this is clear to every subagent that is launched.
@@ -67,8 +66,10 @@ flag-parity gotcha covers which ones don't, e.g. `pr show`/`pr update`).
 
 Create a todo list before starting, then follow these steps precisely:
 
-1. Launch a haiku agent to check if any of the following are true (using `az repos pr show --id <id>`
-   — no `--project`/`--repository`, see the `azure-devops` skill's flag-parity gotcha):
+1. Launch a haiku agent to check if any of the following are true. PR metadata:
+   `mcp__ado__repo_pull_request` `action: get` with `pullRequestId` (fallback:
+   `az repos pr show --id <id>` — no `--project`/`--repository`, see the `azure-devops` skill's
+   flag-parity gotcha).
    - The PR is abandoned/completed (`status` != `active`).
    - The PR is a draft (`isDraft: true`).
    - **Gotcha (learned 2026-07-21, from a false-stop):** `mergeStatus: succeeded`
@@ -80,6 +81,7 @@ Create a todo list before starting, then follow these steps precisely:
      never by `mergeStatus`.
    - The PR does not need code review (automated PR, trivial obviously-correct change).
    - Claude has already commented on this PR. Fetch existing threads:
+     `mcp__ado__repo_pull_request_thread` (list threads for the PR). Fallback:
      ```bash
      az devops invoke --area git --resource pullRequestThreads \
        --route-parameters project="<project>" repositoryId="<repo>" pullRequestId=<id> \
@@ -117,9 +119,11 @@ Create a todo list before starting, then follow these steps precisely:
 3. Get the PR metadata and diff, then build the change brief.
 
    **3a. Metadata and diff.**
-   - `az repos pr show --id <id> -o json` → title, description, `sourceRefName`, `targetRefName`, `lastMergeSourceCommit`, `lastMergeTargetCommit`.
-   - Fetch the branches and diff locally (most reliable). Save it to a file — later
-     steps read it more than once:
+   - `mcp__ado__repo_pull_request` `action: get` → title, description, `sourceRefName`,
+     `targetRefName`, `lastMergeSourceCommit`, `lastMergeTargetCommit`. (Fallback:
+     `az repos pr show --id <id> -o json`.)
+   - Fetch the branches and diff locally — the PR read does not embed commits or a diff in
+     either surface. Save it to a file; later steps read it more than once:
      ```bash
      git fetch origin
      # refs look like refs/heads/<branch>; strip the prefix
@@ -244,17 +248,39 @@ Create a todo list before starting, then follow these steps precisely:
 
 8. Build the list of comments you plan to leave (for your own check; do not post it anywhere).
 
-9. Post each issue as an inline PR thread via `az devops invoke`. Azure DevOps inline comments are **threads** with a `threadContext` anchoring them to a file + line. For each thread, write a JSON body file and POST it:
+9. Post each issue as an inline PR thread.
 
+   **MCP path (preferred):** one `mcp__ado__repo_pull_request_thread_write` call per issue —
+   no JSON body files, no shell escaping:
+   ```
+   action: create
+   repositoryId: <repo>          # project required too when this is a name, not a GUID
+   project: <project>
+   pullRequestId: <id>
+   filePath: /src/Foo.cs         # repo-absolute, leading slash
+   rightFileStartLine: 41
+   rightFileEndLine: 42
+   status: Active                # Active only when asking for a change; Closed for FYI-only
+   content: <markdown comment>
+   ```
+   - **MCP limitation: only right-side (new file) anchors exist** — there are no
+     `leftFile*` params. A comment on *deleted* lines needs the az fallback below with
+     `leftFileStart`/`leftFileEnd`.
+   - For a general (non-inline) summary comment, omit `filePath` and the line params.
+   - `status` defaults to `Active`, which shows as unresolved and **gates PR completion** —
+     see the `azure-devops` skill. Findings are `Active`; anything informational is `Closed`.
+
+   **az fallback** (MCP absent, or left-side anchor needed): write a JSON body per thread and
+   POST via `az devops invoke`:
    ```jsonc
-   // thread.json — inline comment on the RIGHT (new) side of the file
+   // thread.json — inline comment; use leftFileStart/leftFileEnd for deleted lines
    {
      "comments": [
        { "parentCommentId": 0, "content": "<markdown comment>", "commentType": 1 }
      ],
-     "status": 1,                                  // 1 = active
+     "status": 1,                                  // 1 = active, 4 = closed
      "threadContext": {
-       "filePath": "/src/Foo.cs",                  // repo-absolute, leading slash
+       "filePath": "/src/Foo.cs",
        "rightFileStart": { "line": 41, "offset": 1 },
        "rightFileEnd":   { "line": 42, "offset": 1 }
      }
@@ -266,26 +292,23 @@ Create a todo list before starting, then follow these steps precisely:
      --api-version 7.1 --http-method POST \
      --in-file thread.json --media-type application/json -o json
    ```
-   - Anchor to the **new** side with `rightFileStart`/`rightFileEnd`. For a comment on deleted lines, use `leftFileStart`/`leftFileEnd` instead.
-   - For a general (non-inline) summary comment, omit `threadContext` entirely.
-   - `commentType: 1` = text. `status: 1` = active (use `4` = closed/won't-fix for FYI-only, but default to active).
-   - For small self-contained fixes, include the suggested code in the markdown `content` (Azure DevOps has no committable-suggestion syntax like GitHub — put a fenced code block in the comment). For larger fixes, describe the fix in prose.
+   Build the JSON bodies with a `python3` heredoc writing real files (`json.dump`) rather than
+   hand-escaping markdown into shell strings — comment bodies contain backticks, `$`, and
+   newlines that shell quoting mangles.
+
+   **Both paths:**
+   - For small self-contained fixes, include the suggested code in the markdown `content`
+     (Azure DevOps has no committable-suggestion syntax like GitHub — put a fenced code block
+     in the comment). For larger fixes, describe the fix in prose.
    - **Only ONE thread per unique issue. No duplicates.**
-   - **Never retry a POST on a parse failure — GET the thread list first.** Learned 2026-08-03,
-     all six POSTs succeeded, but the wrapper that piped each response through an
-     inline `python3 -c` inside `$(...)` mis-reported every one as `FAIL`. Retrying would have
-     double-posted six threads on a public PR. Do not judge success by your own parsing of the
-     POST output; confirm with the read-only list call and compare `filePath` + `rightFileStart.line`
-     against your planned set:
-     ```bash
-     az devops invoke --area git --resource pullRequestThreads \
-       --route-parameters project="<project>" repositoryId="<repo>" pullRequestId=<id> \
-       --api-version 7.1 -o json --http-method GET
-     ```
-     Simplest robust posting loop: POST each file, ignore stdout, then GET once at the end and
-     verify the thread count and anchors. Build the JSON bodies with a `python3` heredoc writing
-     real files (`json.dump`) rather than hand-escaping markdown into shell strings — the comment
-     bodies contain backticks, `$`, and newlines that shell quoting mangles.
+   - **Never retry a post on a parse/response failure — list the threads first.** Learned
+     2026-08-03 on the az path: all six POSTs succeeded, but the wrapper that piped each
+     response through an inline `python3 -c` inside `$(...)` mis-reported every one as `FAIL`.
+     Retrying would have double-posted six threads on a public PR. Do not judge success by your
+     own parsing of the post output; confirm with the read-only thread list
+     (`mcp__ado__repo_pull_request_thread`, or the GET above) and compare `filePath` +
+     `rightFileStart.line` against your planned set. Simplest robust loop: post each thread,
+     ignore per-call output, then list once at the end and verify the thread count and anchors.
 
 Use this list when evaluating issues in steps 4 and 5 (false positives, do NOT flag):
 - Pre-existing issues.
@@ -316,20 +339,18 @@ Notes:
 - **Sonnet subagents can fail with `API Error: 529 Overloaded` in bursts.** Learned
   2026-07-29, 4 consecutive failures in one run. Relaunch the agent on `opus` rather than
   retrying the same model — capacity differs per model — and keep the prompt identical.
-- Use the `az` CLI for all Azure DevOps interaction. Do not use web fetch.
-- Pass `--org`/`--project`/`--repository` (or rely on `--detect true`) consistently across every `az` call.
+- Use the MCP tools (or the `az` CLI fallback) for all Azure DevOps interaction. Do not use web fetch.
 - **Formatting differs by surface** (learned 2026-07-10, a work item rendered
   raw markdown as plain text):
-  - PR **comments** (`az repos pr ... thread` API `content`) render **markdown**.
-  - **Work item** multiline fields (description, repro steps, acceptance
-    criteria) default to **HTML** — see the `azure-devops` skill's work-item
-    field gotcha for the markdown-format-flip fix (REST JSON-patch with
-    `multilineFieldsFormat`).
+  - PR **thread** `content` renders **markdown** natively.
+  - **Work item** multiline fields default to **HTML** — with MCP, pass
+    `format: "Markdown"` (see the `azure-devops` skill); on the az path it needs the
+    REST JSON-patch with `multilineFieldsFormat`.
 - When linking to code in comment markdown, link to the file at the PR's source commit in the Azure DevOps web UI, e.g.
   `https://dev.azure.com/<org>/<project>/_git/<repo>/commit/<fullSha>?path=/src/Foo.cs&line=41&lineEnd=42&lineStartColumn=1&lineEndColumn=1`
-  Use the full commit SHA (`lastMergeSourceCommit.commitId` from `az repos pr show`).
+  Use the full commit SHA (`lastMergeSourceCommit.commitId` from the PR metadata).
 
-Summary comment format when `--comment` is set and no issues found (post as a thread with no `threadContext`):
+Summary comment format when `--comment` is set and no issues found (post as a thread with no file anchor; status `Closed` — it asks nothing of the author):
 
 ---
 
