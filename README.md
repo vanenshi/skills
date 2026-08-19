@@ -33,8 +33,8 @@ Workflow: `/plan-draft <goal>` → review the draft and set `status: approved` �
 | Skill | What it does |
 | --- | --- |
 | `abridge-diff` | Condenses a long diff into a "reading diff" — same rows and structure, mechanical bulk removed. The model emits coordinates and a Python applier writes the output, so no line can be invented. A local port of [boldsoftware/meat](https://github.com/boldsoftware/meat) that needs no API key. |
-| `azure-devops` | Driving an Azure DevOps remote via the `az` CLI: flag-parity gotchas, work-item linking and field formats, and the commit-split/PR create-update workflow. Self-updating — each gotcha exists because a real run hit it. |
-| `code-review-azure` | Reviews an Azure DevOps PR: a change brief (what changed, what was decided, what to ask the author) followed by parallel review agents whose findings are independently validated before anything is posted. Builds on `azure-devops`. |
+| `azure-devops` | Driving an Azure DevOps remote, MCP-first: the `mcp__ado__*` tools are the primary surface (typed schemas, native markdown fields), the `az` CLI kept as fallback. Covers tool selection, API-level gotchas, work-item linking, and the commit-split/PR create-update workflow. Self-updating — each gotcha exists because a real run hit it. |
+| `code-review-azure` | Reviews an Azure DevOps PR: a change brief (what changed, what was decided, what to ask the author) followed by parallel review agents whose findings are independently validated before anything is posted. MCP-first for all PR metadata and thread posting. Builds on `azure-devops`. |
 | `debug-mode` | Hypothesis-driven debugging with runtime log instrumentation and human-in-the-loop reproduction, for bugs that cannot be diagnosed by reading code alone. Strips every trace of instrumentation when done. |
 
 ## Conventions
