@@ -92,6 +92,25 @@ These are server behaviors, not CLI quirks — the MCP tools hit them too.
 - A PR read does not embed its commit list — get commits from git (`git log <target>..<source>`).
 - PR thread `content` renders markdown natively; work-item multiline fields need the explicit
   `format: "Markdown"` (see above) or they render as HTML with literal `**`/backticks.
+- **`Failed to find api location for area: <area> id: <guid>` is a client-side cache bug, not
+  auth/org/project.** Root-caused 2026-08-20 (QuanticTechnology/Match) by reading the installed
+  `azure-devops-node-api` source: `VsoClient.beginGetAreaLocations()` discovers an area's REST
+  endpoints with one unversioned `OPTIONS _apis/{area}` call, then **memoizes the result forever
+  for the life of the MCP process**, keyed by area name (`VsoClient.js:118-138`). If that first
+  discovery call for a given area (`git`, `wit`, …) returns before the endpoint list is fully
+  populated — observed on the very first `git`-area call of a freshly connected session — the
+  incomplete list is cached permanently, and every later call into that same area throws this
+  error even though the location id is valid and nothing about auth/org/project changed. Other
+  areas (e.g. `core`) can be working fine in the same session; area caches are independent, so a
+  working `core_list_projects` is not evidence `git`/`wit` will work.
+  **It self-heals: a plain retry of the identical call, seconds later, succeeds** — confirmed live
+  by retrying `repo_pull_request` `get` with zero changes. First try `git id: 9946fd70-...` →
+  fail; retry → full PR payload. If it wedges past 2-3 retries (not just the first call after
+  connecting), restart the `ado` MCP server (`/mcp` in an interactive session, or restart Claude
+  Code) — there is no way to invalidate one area's cache from outside the process. This is the
+  same bug behind the 2026-08-19 `wit` symptom struck above (`wit_work_item_write` and
+  `wit_work_item` `get` with `fields` failing while a plain `get` on the same id succeeded) — the
+  plain `get` happened to land after that area's cache had already warmed correctly.
 
 ## az CLI fallback gotchas (only when MCP is unavailable)
 
